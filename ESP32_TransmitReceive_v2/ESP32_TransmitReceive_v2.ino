@@ -39,56 +39,53 @@ void OnDataSent(const wifi_tx_info_t *tx_info, esp_now_send_status_t status) {
 
 // Callback when data is received (ESP32 Core 3.x signature)
 void OnDataRecv(const esp_now_recv_info *info, const uint8_t *incomingData, int len) {
-  // Extract the MAC address from the new info struct
-  const uint8_t *mac = info->src_addr;
-
-  String msg = "";
-  for (int i = 0; i < len; i++) {
-    msg += (char)incomingData[i];
+  // Fast path: streaming is the time-critical case, handle it first with
+  // zero allocation so the handshake comparisons below never run per-packet.
+  if (currentState == STATE_RX_STREAMING || currentState == STATE_TX_STREAMING) {
+    Serial.write(incomingData, len);
+    return;
   }
 
+  const uint8_t *mac = info->src_addr;
+  bool isPing = (len == 4 && memcmp(incomingData, PING_MSG, 4) == 0);
+  bool isPong = (len == 4 && memcmp(incomingData, PONG_MSG, 4) == 0);
+
   // Handle Receive Mode Handshake
-  if (currentState == STATE_RX_WAIT_PING && msg == PING_MSG) {
+  if (currentState == STATE_RX_WAIT_PING && isPing) {
     Serial.println("Test ping received! Replying with ping...");
-    
+
     // Save the sender's MAC globally so we can reply now and stream later
-    memcpy(peerMAC, mac, 6); 
-      
-    // Register the sender as a peer 
+    memcpy(peerMAC, mac, 6);
+
+    // Register the sender as a peer
     memcpy(peerInfo.peer_addr, peerMAC, 6);
-    peerInfo.channel = 0;  
+    peerInfo.channel = 0;
     peerInfo.encrypt = false;
     if (esp_now_add_peer(&peerInfo) != ESP_OK) {
       Serial.println("Failed to add peer");
       return;
     }
-    
+
     // Send PONG back using the correctly saved MAC
     esp_now_send(peerMAC, (uint8_t *)PONG_MSG, strlen(PONG_MSG));
     Serial.println("Connection successful.");
 
-    preferences.putChar("mode", 'R'); 
+    preferences.putChar("mode", 'R');
     preferences.putBytes("mac", peerMAC, 6);
 
     currentState = STATE_RX_STREAMING;
   }
-  
+
   // Handle Transmit Mode Handshake (waiting for reply)
-  else if (currentState == STATE_TX_WAIT_REPLY && msg == PONG_MSG) {
+  else if (currentState == STATE_TX_WAIT_REPLY && isPong) {
 
     Serial.println("Reply received! Connection successful.");
-    Serial.println("Waiting for stream data from Simulink..."); 
+    Serial.println("Waiting for stream data from Simulink...");
 
     preferences.putChar("mode", 'T');
     preferences.putBytes("mac", peerMAC, 6);
 
     currentState = STATE_TX_WAIT_SIMULINK;
-  }
-
-  // Handle Streaming Data
-  else if (currentState == STATE_RX_STREAMING || currentState == STATE_TX_STREAMING) {
-    // Stream received data directly to MATLAB Simulink via Serial
-    Serial.write(incomingData, len);
   }
 }
 
