@@ -94,7 +94,7 @@ void OnDataRecv(const esp_now_recv_info *info, const uint8_t *incomingData, int 
 
 void setup() {
   Serial.setRxBufferSize(1024);
-  Serial.begin(921600);
+  Serial.begin(115200);
   
   WiFi.mode(WIFI_STA);
   if (esp_now_init() != ESP_OK) {
@@ -109,15 +109,20 @@ void setup() {
   preferences.begin("trainer_cfg", false);
   
   Serial.println("\n--- ESP-NOW INITIALIZED ---");
-  Serial.println("Press 'C' within 3 seconds to clear saved configuration...");
+  Serial.println("Type 'CLEAR' within 3 seconds to clear saved configuration...");
   
-  // 3-Second Wait Window
+// 3-Second Wait Window
   unsigned long startTime = millis();
+  String inputBuffer = "";
   bool clearMemory = false;
+  
   while (millis() - startTime < 3000) {
     if (Serial.available() > 0) {
       char input = Serial.read();
-      if (input == 'C' || input == 'c') {
+      inputBuffer += input;
+      
+      // Look for a highly specific string instead of a single byte
+      if (inputBuffer.indexOf("CLEAR") >= 0) {
         clearMemory = true;
         break;
       }
