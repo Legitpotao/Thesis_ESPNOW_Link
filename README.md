@@ -25,8 +25,6 @@ The firmware is a state machine (`STATE_START → STATE_TX_* / STATE_RX_*`) that
 |---|---|
 | `ESP32_TransmitReceive_v2/` | The firmware sketch. Flash the same file to both ESP32 boards. |
 
-> The original sketch (`ESP32_TransmitReceive`, without saved configuration) was removed in v1.1. It is still available in the [v1.0 release](https://github.com/Legitpotao/Thesis_ESPNOW_Link/releases/tag/v1.0).
-
 ### Features
 
 - **Saved configuration:** after a successful handshake, the mode (T/R) and peer MAC are stored in flash (NVS namespace `trainer_cfg`). On the next boot the board goes straight to streaming with no setup.
