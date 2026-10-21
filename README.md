@@ -23,10 +23,11 @@ The firmware is a state machine (`STATE_START → STATE_TX_* / STATE_RX_*`) that
 
 | Folder | Description |
 |---|---|
-| `ESP32_TransmitReceive/` | Original version. Choose T/R and do the handshake on every power-up. |
-| `ESP32_TransmitReceive_v2/` | Recommended version. Adds saved configuration and a faster receive path (see below). |
+| `ESP32_TransmitReceive_v2/` | The firmware sketch. Flash the same file to both ESP32 boards. |
 
-### What v2 adds
+> The original sketch (`ESP32_TransmitReceive`, without saved configuration) was removed in v1.1. It is still available in the [v1.0 release](https://github.com/Legitpotao/Thesis_ESPNOW_Link/releases/tag/v1.0).
+
+### Features
 
 - **Saved configuration:** after a successful handshake, the mode (T/R) and peer MAC are stored in flash (NVS namespace `trainer_cfg`). On the next boot the board goes straight to streaming with no setup.
 - **Reset option:** type `CLEAR` in the serial monitor within 3 seconds of boot to erase the saved configuration and start over.
@@ -49,7 +50,7 @@ The firmware is a state machine (`STATE_START → STATE_TX_* / STATE_RX_*`) that
 6. Wait for `Connection successful.` on both boards.
 7. Close the serial monitors and connect each board's COM port to your Simulink model: the TX port to the serial send block, the RX port to the serial receive block.
 
-With v2, steps 4–6 only need to be done once. After that, both boards reconnect automatically on power-up.
+Steps 4–6 only need to be done once. After that, both boards reconnect automatically on power-up.
 
 ## Notes
 
